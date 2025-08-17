@@ -1,12 +1,13 @@
 const path = require('path');
-const Database = require('better-sqlite3');
+const fs = require('fs');
 
 const dbFilePath = path.join(process.cwd(), 'database.sqlite');
-const db = new Database(dbFilePath);
 
-db.pragma('journal_mode = WAL');
+let SQLModule = null;
+let sqliteDb = null;
+let dbWrapper = null;
 
-db.exec(`
+const schemaSql = `
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE,
@@ -32,8 +33,7 @@ CREATE TABLE IF NOT EXISTS carts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL UNIQUE,
   created_at DATETIME NOT NULL DEFAULT (datetime('now')),
-  updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS cart_items (
@@ -43,9 +43,7 @@ CREATE TABLE IF NOT EXISTS cart_items (
   quantity INTEGER NOT NULL CHECK(quantity > 0),
   created_at DATETIME NOT NULL DEFAULT (datetime('now')),
   updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(cart_id, product_id),
-  FOREIGN KEY(cart_id) REFERENCES carts(id) ON DELETE CASCADE,
-  FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
+  UNIQUE(cart_id, product_id)
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -63,8 +61,7 @@ CREATE TABLE IF NOT EXISTS orders (
   delivery_postal_code TEXT NOT NULL,
   delivery_country TEXT NOT NULL,
   created_at DATETIME NOT NULL DEFAULT (datetime('now')),
-  updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY(user_id) REFERENCES users(id)
+  updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
@@ -74,29 +71,117 @@ CREATE TABLE IF NOT EXISTS order_items (
   quantity INTEGER NOT NULL CHECK(quantity > 0),
   price_cents INTEGER NOT NULL CHECK(price_cents >= 0),
   created_at DATETIME NOT NULL DEFAULT (datetime('now')),
-  updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE,
-  FOREIGN KEY(product_id) REFERENCES products(id)
+  updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON cart_items(cart_id);
-`);
+`;
 
-function touchUpdatedAt(tableName, id) {
-  db.prepare(`UPDATE ${tableName} SET updated_at = datetime('now') WHERE id = ?`).run(id);
+function createWrapper(db) {
+	function saveDb() {
+		const data = db.export();
+		fs.writeFileSync(dbFilePath, Buffer.from(data));
+	}
+	function isWrite(sql) {
+		return /^\s*(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|REPLACE|BEGIN|COMMIT|PRAGMA)/i.test(sql);
+	}
+	function scalar(sql) {
+		const res = db.exec(sql);
+		if (res && res[0] && res[0].values && res[0].values[0]) return res[0].values[0][0];
+		return 0;
+	}
+	return {
+		prepare(sql) {
+			return {
+				get(...params) {
+					const stmt = db.prepare(sql);
+					stmt.bind(params);
+					const has = stmt.step();
+					const row = has ? stmt.getAsObject() : undefined;
+					stmt.free();
+					return row;
+				},
+				all(...params) {
+					const stmt = db.prepare(sql);
+					stmt.bind(params);
+					const rows = [];
+					while (stmt.step()) rows.push(stmt.getAsObject());
+					stmt.free();
+					return rows;
+				},
+				run(...params) {
+					const stmt = db.prepare(sql);
+					stmt.run(params);
+					stmt.free();
+					const lastInsertRowid = scalar("SELECT last_insert_rowid() AS id");
+					const changes = db.getRowsModified ? db.getRowsModified() : scalar('SELECT changes() AS c');
+					if (isWrite(sql)) saveDb();
+					return { lastInsertRowid, changes };
+				},
+			};
+		},
+		exec(sql) {
+			db.exec(sql);
+			saveDb();
+		},
+		transaction(fn) {
+			return (...args) => {
+				// Simplified: just run and save, avoid explicit BEGIN/COMMIT with sql.js
+				const result = fn(...args);
+				saveDb();
+				return result;
+			};
+		},
+	};
 }
 
-function getOrCreateCartIdForUser(userId) {
-  const existing = db.prepare('SELECT id FROM carts WHERE user_id = ?').get(userId);
-  if (existing) return existing.id;
-  const info = db.prepare('INSERT INTO carts (user_id) VALUES (?)').run(userId);
-  return info.lastInsertRowid;
+async function initDb() {
+	if (dbWrapper) return dbWrapper;
+	if (!SQLModule) {
+		const initSqlJs = require('sql.js');
+		SQLModule = await initSqlJs({
+			locateFile: (file) => path.join(__dirname, '../../node_modules/sql.js/dist', file),
+		});
+	}
+	let data = null;
+	if (fs.existsSync(dbFilePath)) {
+		data = fs.readFileSync(dbFilePath);
+	}
+	sqliteDb = data ? new SQLModule.Database(new Uint8Array(data)) : new SQLModule.Database();
+	// Ensure schema
+	sqliteDb.exec(schemaSql);
+	dbWrapper = createWrapper(sqliteDb);
+	// Persist initial file if not exists
+	if (!fs.existsSync(dbFilePath)) {
+		const exported = sqliteDb.export();
+		fs.writeFileSync(dbFilePath, Buffer.from(exported));
+	}
+	return dbWrapper;
+}
+
+async function getDb() {
+	return await initDb();
+}
+
+async function touchUpdatedAt(tableName, id) {
+	const allowed = new Set(['users','products','carts','cart_items','orders','order_items']);
+	if (!allowed.has(tableName)) return;
+	const db = await getDb();
+	db.prepare(`UPDATE ${tableName} SET updated_at = datetime('now') WHERE id = ?`).run(id);
+}
+
+async function getOrCreateCartIdForUser(userId) {
+	const db = await getDb();
+	const existing = db.prepare('SELECT id FROM carts WHERE user_id = ?').get(userId);
+	if (existing) return existing.id;
+	const info = db.prepare('INSERT INTO carts (user_id) VALUES (?)').run(userId);
+	return info.lastInsertRowid;
 }
 
 module.exports = {
-  db,
-  getOrCreateCartIdForUser,
-  touchUpdatedAt,
+	getDb,
+	getOrCreateCartIdForUser,
+	touchUpdatedAt,
 };
