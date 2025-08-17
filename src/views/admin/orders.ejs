@@ -1,0 +1,30 @@
+<% layout('partials/layout') %>
+<h1>All Orders</h1>
+<table>
+	<thead>
+		<tr><th>ID</th><th>User</th><th>Total</th><th>Status</th><th>Placed</th><th></th></tr>
+	</thead>
+	<tbody>
+		<% orders.forEach(o => { %>
+			<tr>
+				<td>#<%= o.id %></td>
+				<td><%= o.user_id %></td>
+				<td>$<%= formatPrice(o.total_cents) %></td>
+				<td><%= o.status %></td>
+				<td><%= o.created_at %></td>
+				<td>
+					<form method="post" action="/admin/orders/<%= o.id %>/status" class="inline">
+						<select name="status">
+							<option value="pending" <%= o.status==='pending'?'selected':'' %>>pending</option>
+							<option value="paid" <%= o.status==='paid'?'selected':'' %>>paid</option>
+							<option value="shipped" <%= o.status==='shipped'?'selected':'' %>>shipped</option>
+							<option value="completed" <%= o.status==='completed'?'selected':'' %>>completed</option>
+							<option value="cancelled" <%= o.status==='cancelled'?'selected':'' %>>cancelled</option>
+						</select>
+						<button class="btn">Update</button>
+					</form>
+				</td>
+			</tr>
+		<% }) %>
+	</tbody>
+</table>

@@ -1,0 +1,14 @@
+<% layout('partials/layout') %>
+<h1><%= product ? 'Edit' : 'New' %> Product</h1>
+<form method="post" action="<%= product ? '/admin/products/' + product.id : '/admin/products' %>" class="form">
+	<label>Name<input type="text" name="name" value="<%= (values && values.name) || (product && product.name) || '' %>" required /></label>
+	<label>Description<textarea name="description" rows="4" required><%= (values && values.description) || (product && product.description) || '' %></textarea></label>
+	<label>Price (cents)<input type="number" name="price_cents" min="0" value="<%= (values && values.price_cents) || (product && product.price_cents) || 0 %>" required /></label>
+	<label>Image URL<input type="url" name="image_url" value="<%= (values && values.image_url) || (product && product.image_url) || '' %>" /></label>
+	<label>Stock Quantity<input type="number" name="stock_qty" min="0" value="<%= (values && values.stock_qty) || (product && product.stock_qty) || 0 %>" required /></label>
+	<% if (errors && errors.length) { %>
+		<ul class="errors"><% errors.forEach(e => { %><li><%= e.msg %></li><% }) %></ul>
+	<% } %>
+	<button class="btn primary" type="submit"><%= product ? 'Save' : 'Create' %></button>
+	<a class="btn" href="/admin/products">Cancel</a>
+</form>

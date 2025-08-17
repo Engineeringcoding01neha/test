@@ -1,0 +1,48 @@
+<% layout('partials/layout') %>
+<h1>Your Cart</h1>
+<% if (!items.length) { %>
+	<p>Your cart is empty.</p>
+	<p><a class="btn" href="/products">Continue shopping</a></p>
+<% } else { %>
+	<table class="cart">
+		<thead>
+			<tr>
+				<th>Product</th>
+				<th>Price</th>
+				<th>Quantity</th>
+				<th>Total</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			<% items.forEach(it => { %>
+				<tr>
+					<td class="prod">
+						<img src="<%= it.image_url %>" alt="<%= it.name %>" />
+						<span><%= it.name %></span>
+					</td>
+					<td>$<%= formatPrice(it.price_cents) %></td>
+					<td>
+						<form method="post" action="/cart/item/<%= it.cart_item_id %>/update" class="inline">
+							<input type="number" name="quantity" value="<%= it.quantity %>" min="1" max="<%= it.stock_qty %>" />
+							<button class="link">Update</button>
+						</form>
+					</td>
+					<td>$<%= formatPrice(it.price_cents * it.quantity) %></td>
+					<td>
+						<form method="post" action="/cart/item/<%= it.cart_item_id %>/delete" class="inline">
+							<button class="link danger">Remove</button>
+						</form>
+					</td>
+				</tr>
+			<% }) %>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="3" class="right">Subtotal</td>
+				<td colspan="2">$<%= formatPrice(subtotal) %></td>
+			</tr>
+		</tfoot>
+	</table>
+	<p class="right"><a class="btn primary" href="/checkout">Proceed to Checkout</a></p>
+<% } %>

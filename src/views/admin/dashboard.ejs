@@ -1,0 +1,21 @@
+<% layout('partials/layout') %>
+<h1>Admin Dashboard</h1>
+<div class="stats">
+	<div class="stat"><span class="label">Users</span><span class="value"><%= stats.totalUsers %></span></div>
+	<div class="stat"><span class="label">Products</span><span class="value"><%= stats.totalProducts %></span></div>
+	<div class="stat"><span class="label">Orders</span><span class="value"><%= stats.totalOrders %></span></div>
+	<div class="stat"><span class="label">Revenue</span><span class="value">$<%= formatPrice(stats.revenueCents) %></span></div>
+	<div class="stat"><span class="label">Low Stock</span><span class="value"><%= stats.lowStock %></span></div>
+</div>
+<h2>Top Products</h2>
+<table>
+	<thead>
+		<tr><th>Product</th><th>Sold</th><th>Revenue</th></tr>
+	</thead>
+	<tbody>
+		<% stats.topProducts.forEach(p => { %>
+			<tr><td><%= p.name %></td><td><%= p.sold_qty %></td><td>$<%= formatPrice(p.revenue_cents) %></td></tr>
+		<% }) %>
+	</tbody>
+</table>
+<p><a class="btn" href="/admin/products">Manage Products</a> <a class="btn" href="/admin/orders">View Orders</a></p>

@@ -1,0 +1,21 @@
+<% layout('partials/layout') %>
+<h1>Login</h1>
+<form method="post" action="/login" class="form">
+	<label>Email
+		<input type="email" name="email" value="<%= values.email || '' %>" required />
+	</label>
+	<label>Password
+		<input type="password" name="password" required />
+	</label>
+	<% if (errors && errors.length) { %>
+		<ul class="errors">
+			<% errors.forEach(e => { %><li><%= e.msg %></li><% }) %>
+		</ul>
+	<% } %>
+	<button class="btn" type="submit">Login</button>
+</form>
+<p>Demo accounts:</p>
+<ul>
+	<li>Admin: admin@shoekart.test / admin123</li>
+	<li>User: user@shoekart.test / user123</li>
+</ul>

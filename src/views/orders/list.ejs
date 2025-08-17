@@ -1,0 +1,16 @@
+<% layout('partials/layout') %>
+<h1>Your Orders</h1>
+<% if (!orders.length) { %>
+	<p>No orders yet.</p>
+<% } else { %>
+	<ul class="orders">
+		<% orders.forEach(o => { %>
+			<li>
+				<a href="/orders/<%= o.id %>">Order #<%= o.id %></a>
+				<span>$<%= formatPrice(o.total_cents) %></span>
+				<span class="status <%= o.status %>"><%= o.status %></span>
+				<span class="date"><%= o.created_at %></span>
+			</li>
+		<% }) %>
+	</ul>
+<% } %>

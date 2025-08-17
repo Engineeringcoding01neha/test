@@ -1,0 +1,1 @@
+node_modules\n.env\ndatabase.sqlite\nsessions.sqlite\ncoverage\n.cache\n.DS_Store

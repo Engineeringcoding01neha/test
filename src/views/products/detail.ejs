@@ -1,0 +1,19 @@
+<% layout('partials/layout') %>
+<article class="product-detail">
+	<div class="media">
+		<img src="<%= product.image_url %>" alt="<%= product.name %>" />
+	</div>
+	<div class="content">
+		<h1><%= product.name %></h1>
+		<p class="price">$<%= formatPrice(product.price_cents) %></p>
+		<p><%= product.description %></p>
+		<p class="stock <%= product.stock_qty > 0 ? 'in' : 'out' %>"><%= product.stock_qty > 0 ? 'In stock' : 'Out of stock' %></p>
+		<% if (currentUser && product.stock_qty > 0) { %>
+			<form method="post" action="/cart/add" class="inline">
+				<input type="hidden" name="product_id" value="<%= product.id %>" />
+				<label>Quantity <input type="number" name="quantity" value="1" min="1" max="<%= product.stock_qty %>" /></label>
+				<button class="btn">Add to cart</button>
+			</form>
+		<% } %>
+	</div>
+</article>

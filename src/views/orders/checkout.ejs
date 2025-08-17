@@ -1,0 +1,42 @@
+<% layout('partials/layout') %>
+<h1>Checkout</h1>
+<% if (!items.length) { %>
+	<p>Your cart is empty.</p>
+	<p><a class="btn" href="/products">Continue shopping</a></p>
+<% } else { %>
+	<section class="checkout">
+		<div class="summary">
+			<h2>Order Summary</h2>
+			<ul>
+				<% items.forEach(it => { %>
+					<li><strong><%= it.quantity %>×</strong> <%= it.name %> — $<%= formatPrice(it.price_cents * it.quantity) %></li>
+				<% }) %>
+			</ul>
+			<p class="total">Subtotal: $<%= formatPrice(subtotal) %></p>
+		</div>
+		<div class="form-wrap">
+			<form method="post" action="/checkout" class="form">
+				<h2>Delivery Details</h2>
+				<label>Full Name<input type="text" name="delivery_name" value="<%= values.delivery_name || '' %>" required /></label>
+				<label>Phone<input type="tel" name="delivery_phone" value="<%= values.delivery_phone || '' %>" required /></label>
+				<label>Address Line 1<input type="text" name="delivery_address1" value="<%= values.delivery_address1 || '' %>" required /></label>
+				<label>Address Line 2<input type="text" name="delivery_address2" value="<%= values.delivery_address2 || '' %>" /></label>
+				<div class="grid2">
+					<label>City<input type="text" name="delivery_city" value="<%= values.delivery_city || '' %>" required /></label>
+					<label>State<input type="text" name="delivery_state" value="<%= values.delivery_state || '' %>" required /></label>
+				</div>
+				<div class="grid2">
+					<label>Postal Code<input type="text" name="delivery_postal_code" value="<%= values.delivery_postal_code || '' %>" required /></label>
+					<label>Country<input type="text" name="delivery_country" value="<%= values.delivery_country || '' %>" required /></label>
+				</div>
+				<h2>Payment</h2>
+				<label><input type="radio" name="payment_method" value="cod" <%= (values.payment_method||'cod')==='cod'?'checked':'' %> /> Cash on Delivery</label>
+				<label><input type="radio" name="payment_method" value="card" <%= values.payment_method==='card'?'checked':'' %> /> Card (simulated)</label>
+				<% if (errors && errors.length) { %>
+					<ul class="errors"><% errors.forEach(e => { %><li><%= e.msg %></li><% }) %></ul>
+				<% } %>
+				<button class="btn primary" type="submit">Place Order</button>
+			</form>
+		</div>
+	</section>
+<% } %>

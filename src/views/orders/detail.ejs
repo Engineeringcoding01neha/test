@@ -1,0 +1,20 @@
+<% layout('partials/layout') %>
+<h1>Order #<%= order.id %></h1>
+<p>Status: <strong class="status <%= order.status %>"><%= order.status %></strong></p>
+<p>Total: <strong>$<%= formatPrice(order.total_cents) %></strong></p>
+<h2>Delivery</h2>
+<p>
+	<%= order.delivery_name %><br />
+	<%= order.delivery_phone %><br />
+	<%= order.delivery_address1 %><br />
+	<%= order.delivery_address2 || '' %><br />
+	<%= order.delivery_city %>, <%= order.delivery_state %> <%= order.delivery_postal_code %><br />
+	<%= order.delivery_country %>
+</p>
+<h2>Items</h2>
+<ul class="order-items">
+	<% items.forEach(it => { %>
+		<li><strong><%= it.quantity %>×</strong> <%= it.name %> — $<%= formatPrice(it.price_cents * it.quantity) %></li>
+	<% }) %>
+</ul>
+<p><a class="btn" href="/orders">Back to orders</a></p>

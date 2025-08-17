@@ -1,0 +1,25 @@
+<% layout('partials/layout') %>
+<h1>Shoes</h1>
+<form method="get" action="/products" class="search">
+	<input type="text" name="q" placeholder="Search shoes" value="<%= q || '' %>" />
+	<button class="btn" type="submit">Search</button>
+</form>
+<div class="grid">
+	<% products.forEach(p => { %>
+		<div class="card">
+			<a href="/products/<%= p.id %>">
+				<img src="<%= p.image_url %>" alt="<%= p.name %>" />
+				<h3><%= p.name %></h3>
+			</a>
+			<p class="price">$<%= formatPrice(p.price_cents) %></p>
+			<p class="stock <%= p.stock_qty > 0 ? 'in' : 'out' %>"><%= p.stock_qty > 0 ? 'In stock' : 'Out of stock' %></p>
+			<% if (currentUser && p.stock_qty > 0) { %>
+				<form method="post" action="/cart/add" class="inline">
+					<input type="hidden" name="product_id" value="<%= p.id %>" />
+					<input type="number" name="quantity" value="1" min="1" max="<%= p.stock_qty %>" />
+					<button class="btn">Add to cart</button>
+				</form>
+			<% } %>
+		</div>
+	<% }) %>
+</div>

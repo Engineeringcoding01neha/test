@@ -1,0 +1,25 @@
+<% layout('partials/layout') %>
+<h1>Manage Products</h1>
+<p><a class="btn" href="/admin/products/new">Add Product</a></p>
+<table>
+	<thead>
+		<tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Updated</th><th></th></tr>
+	</thead>
+	<tbody>
+		<% products.forEach(p => { %>
+			<tr>
+				<td><%= p.id %></td>
+				<td><%= p.name %></td>
+				<td>$<%= formatPrice(p.price_cents) %></td>
+				<td><%= p.stock_qty %></td>
+				<td><%= p.updated_at %></td>
+				<td>
+					<a class="btn" href="/admin/products/<%= p.id %>/edit">Edit</a>
+					<form method="post" action="/admin/products/<%= p.id %>/delete" class="inline" onsubmit="return confirm('Delete product?')">
+						<button class="btn danger">Delete</button>
+					</form>
+				</td>
+			</tr>
+		<% }) %>
+	</tbody>
+</table>
